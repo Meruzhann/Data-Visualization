@@ -1,0 +1,84 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Ex 1
+
+```{r}
+library(dplyr)
+
+crime_data <- read.csv("crime_data.csv")
+head(crime_data)
+```
+
+Type any R code in the chunk, for example:
+```{r}
+
+missing <- colSums(is.na(crime_data))
+missing
+
+```
+
+```{r}
+crime_data_new <- crime_data[, colSums(is.na(crime_data)) <= 0.5 * nrow(crime_data)]
+colSums(is.na(crime_data_new))
+```
+
+```{r}
+crime_data_new$`DATE.OCC` <- as.Date(crime_data_new$`DATE.OCC`, format = '%m/%d/%Y %H:%M:%S AM')
+crime_data_new$year <- as.integer(format(crime_data_new$`DATE.OCC`, "%Y"))
+crime_data_new$month <- format(crime_data_new$`DATE.OCC`, "%m")
+crime_data_new$day <- format(crime_data_new$`DATE.OCC`, "%d")
+crime_data_new$hour <- as.integer(substr(crime_data_new$`TIME.OCC`, 1, 2))
+
+```
+```{r}
+head(crime_data_new)
+```
+```{r}
+crime_data_2023 <- crime_data_new[crime_data_new$year == "2023" & crime_data_new$`Crm.Cd.Desc` == "BURGLARY", ]
+head(crime_data_2023)
+```
+
+
+Ex. 3
+
+```{r}
+crime_count <- crime_data_new %>%
+  group_by(month) %>%
+  summarise(crime_count = n()) %>%
+  arrange(month)
+crime_count
+```
+```{r}
+weapon_crimes <- crime_data %>%
+    filter(!is.na(`Weapon.Used.Cd`)) %>%
+    summarise(weapon_crimes = n())
+
+weapon_crimes
+```
+```{r}
+premis_count <- crime_data_new %>%
+  group_by(`Premis.Desc`) %>%
+  summarise(crime_count = n()) %>%
+  arrange(desc(crime_count))
+premis_count
+```
+
+
+Ex. 4
+
+```{r}
+crime_data <- crime_data %>% mutate(
+    Severity.Score = case_when(
+      !is.na(Weapon.Used.Cd) ~ 5,
+      Crm.Cd.Desc == "BURGLARY" ~ 3,
+      TRUE ~ 1
+    )
+)
+
+crime_data %>% group_by(AREA.NAME) %>%
+  summarise(total = sum(Severity.Score)) %>%
+  arrange(desc(total))
+```
